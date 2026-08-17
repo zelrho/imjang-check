@@ -56,26 +56,26 @@
   summary .cnt { margin-left:auto; font-size:.72rem; color:var(--sub); font-weight:400; text-align:right }
   .dbody { padding:0 12px 12px }
 
-  /* 항목 — 한 화면에 많이 보이게 촘촘히. 왼쪽 체크 / 오른쪽 항목명 */
-  .item { display:flex; flex-wrap:wrap; align-items:center; gap:7px; padding:5px 10px; border-top:1px solid var(--line); }
+  /* 항목 — 왼쪽 항목명 / 오른쪽 체크. 한 화면에 많이 보이게 촘촘히 */
+  .item { display:flex; flex-wrap:wrap; align-items:center; gap:5px; padding:4px 8px 4px 10px; border-top:1px solid var(--line); }
   .item.conflict { background:#fdf3ec; }
   .body { flex:1; min-width:0 }
-  .ilabel { font-size:.83rem; line-height:1.25 }
-  .ilabel .star { color:var(--mid); font-size:.7rem }
-  .ihint { font-size:.68rem; color:var(--sub); line-height:1.25 }
-  .other { font-size:.66rem; background:#eef2f0; color:var(--accent); border-radius:9px; padding:0 6px; margin-left:3px; white-space:nowrap; }
+  .ilabel { font-size:.82rem; line-height:1.25 }
+  .ilabel .star { color:var(--mid); font-size:.68rem }
+  .ihint { font-size:.67rem; color:var(--sub); line-height:1.2 }
+  .other { font-size:.65rem; background:#eef2f0; color:var(--accent); border-radius:9px; padding:0 5px; margin-left:3px; white-space:nowrap; }
   .other.c { background:#f6e3dc; color:var(--accent2) }
-  .ctl { display:flex; gap:3px; align-items:center; flex:none }
-  .rate { display:flex; gap:3px }
-  .rate button { width:36px; padding:8px 0; border:1px solid var(--line); background:#fcfbf9; border-radius:7px; color:var(--sub); font-size:.72rem; line-height:1.1 }
-  .rate.bool button { width:42px }
-  .ctl input, .ctl select { width:72px; padding:6px 7px; font-size:16px }
+  .ctl { display:flex; gap:2px; align-items:center; flex:none }
+  .rate { display:flex; gap:2px }
+  .rate button { width:30px; padding:6px 0; border:1px solid var(--line); background:#fcfbf9; border-radius:6px; color:var(--sub); font-size:.66rem; line-height:1.1 }
+  .rate.bool button { width:34px }
+  .ctl input, .ctl select { width:64px; padding:5px 6px; font-size:16px }
   .item textarea.memo { flex:1 0 100%; width:100% }
   .rate button.on[data-v="2"] { background:var(--ok); color:#fff; border-color:var(--ok) }
   .rate button.on[data-v="1"] { background:var(--mid); color:#fff; border-color:var(--mid) }
   .rate button.on[data-v="0"] { background:var(--warn); color:#fff; border-color:var(--warn) }
   .rate.bool button.on { background:var(--accent); color:#fff; border-color:var(--accent) }
-  .tool { border:1px solid var(--line); background:#fcfbf9; border-radius:7px; padding:5px 6px; flex:none; font-size:.74rem }
+  .tool { border:1px solid var(--line); background:#fcfbf9; border-radius:6px; padding:4px 5px; flex:none; font-size:.7rem }
   .tool.on { background:#f6e3dc; border-color:var(--accent2) }
   .memo { margin-top:5px; font-size:15px; min-height:38px }
   .hide { display:none !important }
@@ -126,7 +126,7 @@
 <script src="lib.js"></script>
 <script src="sync.js"></script>
 <script>
-const APP_VER = "2026-08-17d";   // 폰이 어떤 버전을 보고 있는지 확인용 (백업 탭 맨 아래)
+const APP_VER = "2026-08-17e";   // 폰이 어떤 버전을 보고 있는지 확인용 (백업 탭 맨 아래)
 const KEY = "imjang.v1", BAK = KEY + ".bak";
 const $ = s => document.querySelector(s);
 const el = (t, c, h) => { const x = document.createElement(t); if (c) x.className = c; if (h !== undefined) x.innerHTML = h; return x; };
@@ -485,7 +485,7 @@ function itemRow(it, isConf) {
   rv.onclick = () => { cur.flags[it.id] ? delete cur.flags[it.id] : cur.flags[it.id] = 1; rv.classList.toggle("on"); touch(); };
   tools.appendChild(rv);
 
-  row.appendChild(ctl); row.appendChild(body); row.appendChild(tools); row.appendChild(ta);
+  row.appendChild(body); row.appendChild(ctl); row.appendChild(tools); row.appendChild(ta);
   return row;
 }
 function showVal(it, v) {
