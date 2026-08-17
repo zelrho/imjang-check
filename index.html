@@ -126,6 +126,7 @@
 <script src="lib.js"></script>
 <script src="sync.js"></script>
 <script>
+const APP_VER = "2026-08-17d";   // 폰이 어떤 버전을 보고 있는지 확인용 (백업 탭 맨 아래)
 const KEY = "imjang.v1", BAK = KEY + ".bak";
 const $ = s => document.querySelector(s);
 const el = (t, c, h) => { const x = document.createElement(t); if (c) x.className = c; if (h !== undefined) x.innerHTML = h; return x; };
@@ -155,7 +156,17 @@ function save(now) {
   };
   if (now) go(); else { $("#save").textContent = "…"; saveT = setTimeout(go, 400); }
 }
-function touch() { if (cur) cur.updatedAt = Date.now(); save(); updateStats(); }
+// 동기화가 상태를 통째로 갈아끼우면 cur이 옛 객체를 가리킨 채 남는다.
+// 그 상태로 체크하면 화면만 바뀌고 저장이 안 되므로, 쓰기 직전에 항상 현재 객체로 되돌리고
+// 떨어져 있는 동안 찍은 기록은 병합해서 회수한다.
+function ensureCur() {
+  if (!cur || S.props.includes(cur)) return;
+  const fresh = prop(cur.id);
+  if (!fresh) { S.props.push(cur); return; }
+  Object.assign(fresh, L.mergeState({ props: [fresh] }, { props: [cur] }, null).state.props[0]);
+  cur = fresh;
+}
+function touch() { ensureCur(); if (cur) cur.updatedAt = Date.now(); save(); updateStats(); }
 const prop = id => S.props.find(p => p.id === id);
 const meNow = () => S.me;
 // "158" 처럼 숫자만 넣어도 "158동"으로 보이게
@@ -571,14 +582,11 @@ async function doSync(silent) {
   if (!Sync.token) { if (!silent) alert("먼저 백업 탭에서 토큰을 넣어주세요."); return; }
   syncUI("동기화 중…");
   try {
-    const stat = await Sync.run(() => S, s => { S = s; save(true); }, S.me);
+    const stat = await Sync.run(() => S, s => { S = s; if (cur) cur = prop(cur.id) || cur; save(true); }, S.me);
     if (!stat) { syncUI("동기화 중…"); return; }
     syncUI("서버 저장 " + new Date().toTimeString().slice(0, 5));
     const changed = stat.added || stat.updatedItems;
-    if (changed && !(document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))) {
-      if (cur) cur = prop(cur.id);
-      renderRec();
-    }
+    if (changed && !(document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))) renderRec();
     if (!silent) alert(changed ? `동기화 완료.\n새 매물 ${stat.added}건 · 갱신 ${stat.updatedItems}항목을 받았습니다.` : "동기화 완료. 새로 받은 변경은 없습니다.");
     if ($("#back") && !$("#back").classList.contains("hide")) renderBack();
   } catch (e) {
@@ -678,6 +686,16 @@ function renderBack() {
     alert("되돌렸습니다.");
   };
   c3.appendChild(b4);
+  const b5 = el("button", "btn wide", "🔄 앱 최신 버전 받기");
+  b5.style.marginTop = "6px";
+  b5.title = "화면이 예전 그대로일 때";
+  b5.onclick = async () => {
+    if (navigator.serviceWorker) for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister();
+    if (window.caches) for (const k of await caches.keys()) await caches.delete(k);
+    location.reload();
+  };
+  c3.appendChild(b5);
+  c3.appendChild(el("div", "note", `앱 버전 <b>${APP_VER}</b> · 기록은 지워지지 않습니다.`));
   box.appendChild(c3);
 
   if (pending) showPreview();
