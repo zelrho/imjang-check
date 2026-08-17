@@ -102,7 +102,8 @@
     <div class="who" id="who"></div>
   </div>
   <div class="row" id="statline" style="padding-bottom:6px">
-    <span class="save" id="save">—</span><span class="sp"></span>
+    <span class="save" id="save">—</span>
+    <span class="save" id="sync"></span><span class="sp"></span>
     <span class="save" id="stat"></span>
   </div>
   <div class="prog" id="progwrap"><i id="progbar"></i></div>
@@ -114,6 +115,7 @@
 
 <script src="data/checklist.js"></script>
 <script src="lib.js"></script>
+<script src="sync.js"></script>
 <script>
 const KEY = "imjang.v1", BAK = KEY + ".bak";
 const $ = s => document.querySelector(s);
@@ -539,13 +541,72 @@ function renderDash() {
   box.appendChild(c4);
 }
 
+// ── 서버 동기화 ─────────────────────────────────────────
+function syncUI(msg, bad) {
+  const s = $("#sync");
+  s.className = "save" + (bad ? " err" : "");
+  s.textContent = msg ? " · " + msg : "";
+}
+async function doSync(silent) {
+  if (!Sync.token) { if (!silent) alert("먼저 백업 탭에서 토큰을 넣어주세요."); return; }
+  syncUI("동기화 중…");
+  try {
+    const stat = await Sync.run(() => S, s => { S = s; save(true); }, S.me);
+    if (!stat) { syncUI("동기화 중…"); return; }
+    syncUI("서버 저장 " + new Date().toTimeString().slice(0, 5));
+    const changed = stat.added || stat.updatedItems;
+    if (changed && !(document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))) {
+      if (cur) cur = prop(cur.id);
+      renderRec();
+    }
+    if (!silent) alert(changed ? `동기화 완료.\n새 매물 ${stat.added}건 · 갱신 ${stat.updatedItems}항목을 받았습니다.` : "동기화 완료. 새로 받은 변경은 없습니다.");
+    if ($("#back") && !$("#back").classList.contains("hide")) renderBack();
+  } catch (e) {
+    syncUI(navigator.onLine ? "⚠ 동기화 실패" : "오프라인", true);
+    if (!silent) alert("동기화 실패: " + e.message);
+  }
+}
+
 // ── 백업 탭 ─────────────────────────────────────────────
 let pending = null;
 function renderBack() {
   const box = $("#back"); box.innerHTML = "";
   const days = S.lastExport ? Math.floor((Date.now() - S.lastExport) / 86400000) : null;
-  if (S.props.length && (days === null || days >= 7))
+  if (S.props.length && !Sync.token && (days === null || days >= 7))
     box.appendChild(el("div", "warnbox", `⚠ ${days === null ? "아직 한 번도 백업하지 않았습니다" : days + "일째 백업하지 않았습니다"}. 브라우저 데이터를 지우면 기록이 전부 사라집니다.`));
+
+  // 서버 동기화
+  const c0 = el("div", "card");
+  c0.appendChild(el("h2", null, "☁ 서버 동기화 <span class='sub'>(비공개 저장소)</span>"));
+  if (Sync.token) {
+    c0.appendChild(el("div", "note", `연결됨 — <b>${esc(SYNC.owner)}/${esc(SYNC.repo)}</b> · 마지막 동기화 ${S.syncedAt ? new Date(S.syncedAt).toLocaleString("ko-KR") : "없음"}
+      <br>앱을 열 때와 끌 때 자동으로 서버 것과 <b>합칩니다</b>. 상대 기록은 덮어쓰지 않습니다.`));
+    const b = el("button", "btn wide solid", "🔄 지금 동기화");
+    b.style.marginTop = "8px"; b.onclick = () => doSync(false);
+    c0.appendChild(b);
+    const u = el("button", "btn wide danger", "이 기기에서 토큰 삭제");
+    u.style.marginTop = "6px";
+    u.onclick = () => { if (confirm("이 기기에서 동기화를 끕니다. 기록 자체는 남습니다.")) { Sync.token = ""; syncUI(""); renderBack(); } };
+    c0.appendChild(u);
+  } else {
+    c0.appendChild(el("div", "note", `토큰을 한 번만 넣으면 두 사람 기록이 <b>${esc(SYNC.owner)}/${esc(SYNC.repo)}</b>(비공개)에 자동으로 합쳐집니다.
+      <br>토큰 만들기: <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a>
+      → Repository access <b>Only select repositories</b>에서 <b>${esc(SYNC.repo)}</b> 선택 → Permissions ▸ Repository permissions ▸ <b>Contents: Read and write</b> → Generate.
+      <br>토큰은 이 기기 브라우저에만 저장되고, 내보내기 파일에는 들어가지 않습니다.`));
+    const i = el("input"); i.type = "password"; i.placeholder = "github_pat_..."; i.style.marginTop = "8px";
+    i.autocomplete = "off";
+    c0.appendChild(i);
+    const b = el("button", "btn wide solid", "연결하기");
+    b.style.marginTop = "6px";
+    b.onclick = async () => {
+      if (!i.value.trim()) return;
+      Sync.token = i.value; b.textContent = "확인 중…";
+      try { await Sync.pull(); renderBack(); await doSync(false); }
+      catch (e) { Sync.token = ""; alert("연결 실패: " + e.message); b.textContent = "연결하기"; }
+    };
+    c0.appendChild(b);
+  }
+  box.appendChild(c0);
 
   const c1 = el("div", "card");
   c1.appendChild(el("h2", null, "내보내기"));
@@ -647,7 +708,12 @@ function showPreview() {
 // ── 시작 ────────────────────────────────────────────────
 renderRec();
 $("#save").textContent = S.props.length ? "불러옴 · 자동 저장됩니다" : "자동 저장됩니다 (저장 버튼 없음)";
-addEventListener("visibilitychange", () => { if (document.hidden) save(true); });
+addEventListener("visibilitychange", () => {
+  save(true);
+  if (Sync.token) doSync(true);          // 앱을 나갈 때 올리고, 돌아올 때 받아온다
+});
+addEventListener("online", () => { if (Sync.token) doSync(true); });
+if (Sync.token) { syncUI("동기화 중…"); doSync(true); }
 if ("serviceWorker" in navigator && location.protocol.startsWith("http"))
   addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
 </script>
