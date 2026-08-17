@@ -24,11 +24,11 @@
   .btn.wide { width:100%; padding:13px; border-radius:10px; }
   .btn.solid { background:var(--accent); color:#fff; border-color:var(--accent); }
   .btn.danger { color:var(--warn); }
-  input, select, textarea { font-family:inherit; font-size:16px; width:100%; padding:9px 10px;
+  input, select, textarea { font-family:inherit; font-size:16px; width:100%; padding:7px 9px;
     border:1px solid var(--line); border-radius:8px; background:#fcfbf9; color:var(--ink); }
-  textarea { min-height:56px; resize:vertical; }
-  label.f { font-size:.75rem; color:var(--sub); display:block; margin-bottom:3px; }
-  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:8px; }
+  textarea { min-height:52px; resize:vertical; }
+  label.f { font-size:.72rem; color:var(--sub); display:block; margin-bottom:1px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(104px,1fr)); gap:7px; }
   .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
   .sp { flex:1 }
 
@@ -47,28 +47,37 @@
   .prog { height:4px; background:var(--line); border-radius:2px; overflow:hidden; }
   .prog i { display:block; height:100%; background:var(--accent); width:0 }
 
-  /* 항목 */
-  details { background:var(--card); border:1px solid var(--line); border-radius:12px; margin-bottom:10px; }
-  summary { padding:12px 14px; font-weight:600; font-size:.95rem; cursor:pointer; list-style:none; display:flex; align-items:center; gap:8px; }
+  /* 접이식 카드 */
+  details { background:var(--card); border:1px solid var(--line); border-radius:12px; margin-bottom:8px; }
+  summary { padding:10px 12px; font-weight:600; font-size:.92rem; cursor:pointer; list-style:none; display:flex; align-items:center; gap:6px; }
   summary::-webkit-details-marker { display:none }
-  summary .cnt { margin-left:auto; font-size:.75rem; color:var(--sub); font-weight:400 }
-  .item { padding:11px 14px; border-top:1px solid var(--line); }
+  summary::before { content:"▸"; color:var(--sub); font-size:.8rem; transition:transform .12s }
+  details[open] > summary::before { content:"▾" }
+  summary .cnt { margin-left:auto; font-size:.72rem; color:var(--sub); font-weight:400; text-align:right }
+  .dbody { padding:0 12px 12px }
+
+  /* 항목 — 한 화면에 많이 보이게 촘촘히. 왼쪽 체크 / 오른쪽 항목명 */
+  .item { display:flex; flex-wrap:wrap; align-items:center; gap:7px; padding:5px 10px; border-top:1px solid var(--line); }
   .item.conflict { background:#fdf3ec; }
-  .ilabel { font-size:.9rem; margin-bottom:2px; }
-  .ilabel .star { color:var(--mid) }
-  .ihint { font-size:.75rem; color:var(--sub); margin-bottom:6px; }
-  .other { font-size:.7rem; background:#eef2f0; color:var(--accent); border-radius:10px; padding:1px 7px; margin-left:4px; white-space:nowrap; }
+  .body { flex:1; min-width:0 }
+  .ilabel { font-size:.83rem; line-height:1.25 }
+  .ilabel .star { color:var(--mid); font-size:.7rem }
+  .ihint { font-size:.68rem; color:var(--sub); line-height:1.25 }
+  .other { font-size:.66rem; background:#eef2f0; color:var(--accent); border-radius:9px; padding:0 6px; margin-left:3px; white-space:nowrap; }
   .other.c { background:#f6e3dc; color:var(--accent2) }
-  .ctl { display:flex; gap:6px; align-items:center; }
-  .rate { display:flex; gap:6px; flex:1 }
-  .rate button { flex:1; padding:11px 0; border:1px solid var(--line); background:#fcfbf9; border-radius:8px; color:var(--sub); }
+  .ctl { display:flex; gap:3px; align-items:center; flex:none }
+  .rate { display:flex; gap:3px }
+  .rate button { width:36px; padding:8px 0; border:1px solid var(--line); background:#fcfbf9; border-radius:7px; color:var(--sub); font-size:.72rem; line-height:1.1 }
+  .rate.bool button { width:42px }
+  .ctl input, .ctl select { width:72px; padding:6px 7px; font-size:16px }
+  .item textarea.memo { flex:1 0 100%; width:100% }
   .rate button.on[data-v="2"] { background:var(--ok); color:#fff; border-color:var(--ok) }
   .rate button.on[data-v="1"] { background:var(--mid); color:#fff; border-color:var(--mid) }
   .rate button.on[data-v="0"] { background:var(--warn); color:#fff; border-color:var(--warn) }
   .rate.bool button.on { background:var(--accent); color:#fff; border-color:var(--accent) }
-  .tool { border:1px solid var(--line); background:#fcfbf9; border-radius:8px; padding:9px 10px; flex:none }
+  .tool { border:1px solid var(--line); background:#fcfbf9; border-radius:7px; padding:5px 6px; flex:none; font-size:.74rem }
   .tool.on { background:#f6e3dc; border-color:var(--accent2) }
-  .memo { margin-top:7px; font-size:14px; min-height:44px }
+  .memo { margin-top:5px; font-size:15px; min-height:38px }
   .hide { display:none !important }
 
   table { width:100%; border-collapse:collapse; font-size:.82rem; }
@@ -149,7 +158,10 @@ function save(now) {
 function touch() { if (cur) cur.updatedAt = Date.now(); save(); updateStats(); }
 const prop = id => S.props.find(p => p.id === id);
 const meNow = () => S.me;
-const label = p => [p.base.단지명 || "이름없음", p.base.동, p.base.호수].filter(Boolean).join(" ");
+// "158" 처럼 숫자만 넣어도 "158동"으로 보이게
+const suffix = (v, s) => { v = String(v == null ? "" : v).trim(); return v && /^\d+$/.test(v) ? v + s : v; };
+const unitLabel = b => [suffix(b.동, "동"), suffix(b.호수, "호"), b.층 ? b.층 + "층" : ""].filter(Boolean).join(" ");
+const label = p => [p.base.단지명 || "이름없음", unitLabel(p.base)].filter(Boolean).join(" ");
 const count단지 = n => S.props.filter(p => (p.base.단지명 || "이름없음") === n).length;
 // 같은 아파트 매물이 흩어지지 않게 단지 → 동 → 호수 순
 function sortProps() {
@@ -216,10 +228,9 @@ function renderList() {
     if (단지 !== prev) { list.appendChild(el("div", "ghead", `${esc(단지)} <span class="sub">${count단지(단지)}건</span>`)); prev = 단지; }
     const c = el("div", "pcard", `
       <div class="pr"><b>${pc.호가 ? man(pc.호가) : "<span class='sub'>호가 미입력</span>"}</b>
-        <div class="m">${sc.pct == null ? "" : sc.pct + "점"}</div></div>
-      <b>${esc(p.base.동 ? p.base.동 + " " : "")}${esc(p.base.호수 || "")}${!p.base.동 && !p.base.호수 ? "동·호수 미입력" : ""}</b>
-      <div class="m">${p.base.평 ? p.base.평 + "평" : "평수 미입력"}${p.base.층 ? ` · ${p.base.층}층${p.base.총층 ? "/" + p.base.총층 : ""}` : ""}${pc.평당가 ? ` · 평당 ${pc.평당가.toLocaleString()}` : ""}${pc.전세가율 != null ? ` · 전세가율 ${pc.전세가율}%` : ""}</div>
-      <div class="m">${esc(p.base.방문일 || "")} ${p.base.방문회차 ? p.base.방문회차 + "차" : ""} · 기입 ${pr.done}/${pr.total}</div>`);
+        <div class="m">${sc.pct == null ? "" : sc.pct + "점 · "}${pr.done}/${pr.total}</div></div>
+      <b>${esc(unitLabel(p.base) || "동·호수 미입력")}</b>
+      <div class="m">${p.base.평 ? p.base.평 + "평" : "평수 미입력"}${pc.평당가 ? ` · 평당 ${pc.평당가.toLocaleString()}` : ""}${pc.전세가율 != null ? ` · 전세 ${pc.전세가율}%` : ""}${p.base.방문일 ? " · " + esc(p.base.방문일.slice(5)) : ""}</div>`);
     c.onclick = () => { cur = p; renderRec(); };
     list.appendChild(c);
   });
@@ -237,9 +248,11 @@ function addProp(seed) {
 function renderDetail() {
   const box = $("#rec"); box.innerHTML = "";
 
-  // 기본정보 + 시세
-  const info = el("div", "card");
-  info.appendChild(el("h2", null, "기본 정보"));
+  // 기본정보 + 시세 (접이식 — 현장에선 접어두고 체크리스트만 본다)
+  const info = el("details");
+  info.open = !cur.base.단지명;
+  info.appendChild(el("summary", null, `기본 정보<span class="cnt" id="baseSum"></span>`));
+  const ibody = el("div", "dbody"); info.appendChild(ibody);
   const preset = el("select");
   preset.innerHTML = '<option value="">단지 프리셋에서 불러오기…</option>' +
     PRESETS.map((x,i) => x.평형.map((y,j) => `<option value="${i}.${j}">${esc(x.단지)} ${y.평}평</option>`).join("")).join("");
@@ -251,36 +264,39 @@ function renderDetail() {
     if (!cur.price.전세가) cur.price.전세가 = y.전세;
     save(true); renderDetail();
   };
-  info.appendChild(preset);
-  info.appendChild(el("div", "note", `프리셋 시세는 ${PRESET_기준일} 기준 <b>시세</b>입니다. 현장 <b>호가</b>는 직접 확인해서 덮어쓰세요.`));
+  ibody.appendChild(preset);
+  ibody.appendChild(el("div", "note", `프리셋 시세는 ${PRESET_기준일} 기준 <b>시세</b>입니다. 현장 <b>호가</b>는 직접 확인해서 덮어쓰세요.`));
 
-  const g1 = el("div", "grid"); g1.style.marginTop = "10px";
+  const g1 = el("div", "grid"); g1.style.marginTop = "8px";
   [["단지명","text"],["동","text"],["호수","text"],["평","number"],["층","number"],["총층","number"],
    ["준공년도","number"],["세대수","number"],["방문일","date"],["방문회차","number"],["부동산","text"],["전화","tel"]]
     .forEach(([f,t]) => g1.appendChild(field("base", f, t)));
-  info.appendChild(g1);
+  ibody.appendChild(g1);
+  const links = el("div", "row"); links.style.marginTop = "8px";
   if (cur.base.전화) {
-    const call = el("a", null, "📞 " + esc(cur.base.부동산 || "부동산") + " 전화");
+    const call = el("a", "btn", "📞 전화");
     call.href = "tel:" + String(cur.base.전화).replace(/[^0-9+]/g,"");
-    call.className = "btn wide"; call.style.cssText += "display:block;text-align:center;margin-top:8px;text-decoration:none";
-    info.appendChild(call);
+    call.style.textDecoration = "none";
+    links.appendChild(call);
   }
   if (cur.base.단지명) {
-    const map = el("a", "btn wide", "🗺 네이버지도에서 보기");
+    const map = el("a", "btn", "🗺 네이버지도");
     map.href = "https://map.naver.com/p/search/" + encodeURIComponent(cur.base.단지명);
-    map.target = "_blank"; map.rel = "noopener";
-    map.style.cssText += "display:block;text-align:center;margin-top:6px;text-decoration:none";
-    info.appendChild(map);
+    map.target = "_blank"; map.rel = "noopener"; map.style.textDecoration = "none";
+    links.appendChild(map);
   }
+  if (links.children.length) ibody.appendChild(links);
   box.appendChild(info);
 
-  const pr = el("div", "card");
-  pr.appendChild(el("h2", null, "시세 <span class='sub'>(만원)</span>"));
+  const pr = el("details");
+  pr.open = !cur.price.매매호가;
+  pr.appendChild(el("summary", null, `시세 <span class="sub" style="font-weight:400">만원</span><span class="cnt" id="priceSum"></span>`));
+  const pbody = el("div", "dbody"); pr.appendChild(pbody);
   const g2 = el("div", "grid");
   L.PRICE_FIELDS.forEach(f => g2.appendChild(field("price", f, "number")));
-  pr.appendChild(g2);
+  pbody.appendChild(g2);
   const calcLine = el("div", "note"); calcLine.id = "calcline";
-  pr.appendChild(calcLine);
+  pbody.appendChild(calcLine);
   box.appendChild(pr);
 
   // 보기 토글
@@ -369,6 +385,8 @@ function updateCalc() {
   const line = $("#calcline"); if (!line) return;
   const c = L.calcPrice(cur);
   line.innerHTML = `평당가 <b>${c.평당가 ? c.평당가.toLocaleString() + "만원" : "-"}</b> · 전세가율 <b>${c.전세가율 != null ? c.전세가율 + "%" : "-"}</b>`;
+  $("#baseSum").textContent = [cur.base.단지명, unitLabel(cur.base), cur.base.평 ? cur.base.평 + "평" : ""].filter(Boolean).join(" ") || "미입력";
+  $("#priceSum").textContent = [c.호가 ? man(c.호가) : "", c.평당가 ? "평당 " + c.평당가.toLocaleString() : "", c.전세가율 != null ? "전세 " + c.전세가율 + "%" : ""].filter(Boolean).join(" · ") || "미입력";
   const fc = $("#fixcard"); if (fc) fc.replaceWith(fixCard());
 }
 
@@ -397,9 +415,10 @@ function itemRow(it, isConf) {
   const mine = (cur.items[it.id] || {})[me] || {};
   const others = S.people.filter(p => p !== me).map(p => [p, (cur.items[it.id] || {})[p]]).filter(x => x[1] && x[1].v !== undefined && x[1].v !== "");
 
-  row.appendChild(el("div", "ilabel", esc(it.label) + (it.core ? ' <span class="star">⭐</span>' : "") +
+  const body = el("div", "body");
+  body.appendChild(el("div", "ilabel", esc(it.label) + (it.core ? ' <span class="star">⭐</span>' : "") + (it.revisit ? " 🔁" : "") +
     others.map(([p, e]) => `<span class="other${isConf ? " c" : ""}">${esc(p)} ${esc(showVal(it, e.v))}${e.memo ? " 📝" : ""}</span>`).join("")));
-  if (it.hint) row.appendChild(el("div", "ihint", esc(it.hint)));
+  if (it.hint) body.appendChild(el("div", "ihint", esc(it.hint)));
 
   const ctl = el("div", "ctl");
   if (it.type === "rate") {
@@ -416,7 +435,7 @@ function itemRow(it, isConf) {
     ctl.appendChild(r);
   } else if (it.type === "bool") {
     const r = el("div", "rate bool");
-    [[true,"있음 / 예"],[false,"없음 / 아니오"]].forEach(([v, lab]) => {
+    [[true,"있음"],[false,"없음"]].forEach(([v, lab]) => {
       const b = el("button", mine.v === v ? "on" : "", lab);
       b.onclick = () => {
         const nv = mine.v === v ? undefined : v;
@@ -436,25 +455,26 @@ function itemRow(it, isConf) {
     const i = el("input"); i.type = it.type === "num" ? "number" : "text";
     if (it.type === "num") { i.inputMode = "decimal"; i.step = "any"; }
     i.value = mine.v == null ? "" : mine.v;
-    i.placeholder = it.unit ? it.unit : "";
+    i.placeholder = it.unit || "";
     i.oninput = () => { const v = it.type === "num" ? (i.value === "" ? undefined : Number(i.value)) : i.value; setVal(it.id, v); mine.v = v; };
-    ctl.appendChild(i);
+    if (it.type === "num") ctl.appendChild(i);
+    else { i.style.marginTop = "3px"; body.appendChild(i); }   // 자유 입력은 폭이 필요해서 아래로
   }
 
+  const tools = el("div", "ctl");
   const memoBtn = el("button", "tool" + (mine.memo ? " on" : ""), "📝");
   const ta = el("textarea", "memo" + (mine.memo ? "" : " hide"));
-  ta.value = mine.memo || ""; ta.placeholder = "메모";
+  ta.value = mine.memo || ""; ta.placeholder = esc(it.label) + " 메모";
   ta.oninput = () => { setVal(it.id, mine.v, ta.value); mine.memo = ta.value; memoBtn.classList.toggle("on", !!ta.value); };
   memoBtn.onclick = () => { ta.classList.toggle("hide"); if (!ta.classList.contains("hide")) ta.focus(); };
-  ctl.appendChild(memoBtn);
+  tools.appendChild(memoBtn);
 
   const rv = el("button", "tool" + (cur.flags[it.id] ? " on" : ""), "🔁");
   rv.title = "다음에 다시 확인";
   rv.onclick = () => { cur.flags[it.id] ? delete cur.flags[it.id] : cur.flags[it.id] = 1; rv.classList.toggle("on"); touch(); };
-  ctl.appendChild(rv);
+  tools.appendChild(rv);
 
-  row.appendChild(ctl); row.appendChild(ta);
-  if (it.revisit && !cur.flags[it.id]) row.appendChild(el("div", "ihint", "🔁 저녁·출퇴근 시간대에 다시 봐야 정확합니다"));
+  row.appendChild(ctl); row.appendChild(body); row.appendChild(tools); row.appendChild(ta);
   return row;
 }
 function showVal(it, v) {
