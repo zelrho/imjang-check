@@ -1,6 +1,6 @@
 // 오프라인용 — 지하주차장·엘리베이터에서도 열려야 한다.
 // 네트워크 우선, 실패하면 캐시. (캐시 우선으로 하면 앱을 고쳐도 폰에 옛 버전이 계속 떴다.)
-const CACHE = "imjang-v4";
+const CACHE = "imjang-v5";
 const SHELL = ["./", "./index.html", "./lib.js", "./sync.js", "./data/checklist.js", "./manifest.json", "./icon-192.png"];
 
 self.addEventListener("install", e => {
