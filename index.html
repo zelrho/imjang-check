@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#3b6e5f">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>🏡 임장 체크리스트</title>
+<style>
+  :root { --bg:#f7f6f3; --card:#fff; --ink:#2c2a26; --sub:#8a867d; --line:#e8e5df;
+          --accent:#3b6e5f; --accent2:#b0563c; --ok:#2e7d4f; --warn:#b0563c; --mid:#b8912f; }
+  * { box-sizing:border-box; margin:0; -webkit-tap-highlight-color:transparent; }
+  body { font-family:'Segoe UI','Malgun Gothic',sans-serif; background:var(--bg); color:var(--ink);
+         max-width:900px; margin:0 auto; padding:0 12px 90px; line-height:1.55; font-size:15px; }
+  h1 { font-size:1.15rem; padding:12px 0 2px; }
+  .sub { color:var(--sub); font-size:.78rem; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:12px; }
+  .card h2 { font-size:1rem; margin-bottom:8px; }
+  button { font-family:inherit; font-size:.9rem; cursor:pointer; }
+  .btn { border:1px solid var(--line); background:var(--card); color:var(--ink); padding:9px 14px; border-radius:20px; }
+  .btn.on { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn.wide { width:100%; padding:13px; border-radius:10px; }
+  .btn.solid { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn.danger { color:var(--warn); }
+  input, select, textarea { font-family:inherit; font-size:16px; width:100%; padding:9px 10px;
+    border:1px solid var(--line); border-radius:8px; background:#fcfbf9; color:var(--ink); }
+  textarea { min-height:56px; resize:vertical; }
+  label.f { font-size:.75rem; color:var(--sub); display:block; margin-bottom:3px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:8px; }
+  .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .sp { flex:1 }
+
+  /* 상단 고정바 */
+  header { position:sticky; top:0; z-index:9; background:var(--bg); padding-bottom:6px;
+           margin:0 -12px; padding-left:12px; padding-right:12px; border-bottom:1px solid var(--line); }
+  nav { display:flex; gap:6px; padding:6px 0; }
+  nav .btn { flex:1; text-align:center; padding:8px 4px; font-size:.85rem; }
+  .bar { display:flex; gap:8px; align-items:center; padding-bottom:6px; }
+  .bar select { flex:1; min-width:0; padding:7px 8px; font-size:.9rem; }
+  .who { display:flex; gap:0; border:1px solid var(--accent); border-radius:20px; overflow:hidden; flex:none; }
+  .who button { border:0; background:var(--card); color:var(--accent); padding:7px 12px; font-weight:600; }
+  .who button.on { background:var(--accent); color:#fff; }
+  .save { font-size:.72rem; color:var(--sub); white-space:nowrap; }
+  .save.err { color:var(--warn); font-weight:700; }
+  .prog { height:4px; background:var(--line); border-radius:2px; overflow:hidden; }
+  .prog i { display:block; height:100%; background:var(--accent); width:0 }
+
+  /* 항목 */
+  details { background:var(--card); border:1px solid var(--line); border-radius:12px; margin-bottom:10px; }
+  summary { padding:12px 14px; font-weight:600; font-size:.95rem; cursor:pointer; list-style:none; display:flex; align-items:center; gap:8px; }
+  summary::-webkit-details-marker { display:none }
+  summary .cnt { margin-left:auto; font-size:.75rem; color:var(--sub); font-weight:400 }
+  .item { padding:11px 14px; border-top:1px solid var(--line); }
+  .item.conflict { background:#fdf3ec; }
+  .ilabel { font-size:.9rem; margin-bottom:2px; }
+  .ilabel .star { color:var(--mid) }
+  .ihint { font-size:.75rem; color:var(--sub); margin-bottom:6px; }
+  .other { font-size:.7rem; background:#eef2f0; color:var(--accent); border-radius:10px; padding:1px 7px; margin-left:4px; white-space:nowrap; }
+  .other.c { background:#f6e3dc; color:var(--accent2) }
+  .ctl { display:flex; gap:6px; align-items:center; }
+  .rate { display:flex; gap:6px; flex:1 }
+  .rate button { flex:1; padding:11px 0; border:1px solid var(--line); background:#fcfbf9; border-radius:8px; color:var(--sub); }
+  .rate button.on[data-v="2"] { background:var(--ok); color:#fff; border-color:var(--ok) }
+  .rate button.on[data-v="1"] { background:var(--mid); color:#fff; border-color:var(--mid) }
+  .rate button.on[data-v="0"] { background:var(--warn); color:#fff; border-color:var(--warn) }
+  .rate.bool button.on { background:var(--accent); color:#fff; border-color:var(--accent) }
+  .tool { border:1px solid var(--line); background:#fcfbf9; border-radius:8px; padding:9px 10px; flex:none }
+  .tool.on { background:#f6e3dc; border-color:var(--accent2) }
+  .memo { margin-top:7px; font-size:14px; min-height:44px }
+  .hide { display:none !important }
+
+  table { width:100%; border-collapse:collapse; font-size:.82rem; }
+  th, td { border-bottom:1px solid var(--line); padding:7px 6px; text-align:right; white-space:nowrap; }
+  th:first-child, td:first-child { text-align:left; position:sticky; left:0; background:var(--card); }
+  th { color:var(--sub); font-weight:600; font-size:.75rem; }
+  .scroll { overflow-x:auto; -webkit-overflow-scrolling:touch }
+  .note { font-size:.76rem; color:var(--sub); margin-top:8px; line-height:1.5 }
+  .big { font-size:1.25rem; font-weight:700; color:var(--accent) }
+  .warnbox { background:#f6e3dc; color:var(--accent2); border-radius:8px; padding:9px 12px; font-size:.8rem; margin-bottom:10px }
+  .empty { text-align:center; color:var(--sub); padding:36px 12px; font-size:.9rem }
+  .plist { display:grid; gap:8px }
+  .pcard { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 14px; cursor:pointer }
+  .pcard b { font-size:.98rem } .pcard .m { font-size:.78rem; color:var(--sub); margin-top:2px }
+  .pcard .s { float:right; font-weight:700; color:var(--accent) }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🏡 임장 체크리스트</h1>
+  <nav>
+    <button class="btn on" data-tab="rec">📝 기록</button>
+    <button class="btn" data-tab="dash">📊 비교</button>
+    <button class="btn" data-tab="back">💾 백업</button>
+  </nav>
+  <div class="bar" id="bar">
+    <select id="pick"></select>
+    <div class="who" id="who"></div>
+  </div>
+  <div class="row" id="statline" style="padding-bottom:6px">
+    <span class="save" id="save">—</span><span class="sp"></span>
+    <span class="save" id="stat"></span>
+  </div>
+  <div class="prog" id="progwrap"><i id="progbar"></i></div>
+</header>
+
+<section id="rec"></section>
+<section id="dash" class="hide"></section>
+<section id="back" class="hide"></section>
+
+<script src="data/checklist.js"></script>
+<script src="lib.js"></script>
+<script>
+const KEY = "imjang.v1", BAK = KEY + ".bak";
+const $ = s => document.querySelector(s);
+const el = (t, c, h) => { const x = document.createElement(t); if (c) x.className = c; if (h !== undefined) x.innerHTML = h; return x; };
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;" }[c]));
+const man = n => n == null ? "-" : (n >= 10000 ? (n/10000).toFixed(n % 10000 ? 2 : 0).replace(/\.?0+$/,"") + "억" : Math.round(n).toLocaleString() + "만");
+
+// ── 상태 ────────────────────────────────────────────────
+let S = load(), cur = null, coreOnly = true;
+
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) { const s = JSON.parse(raw); if (s && s.props) { localStorage.setItem(BAK, raw); return s; } }
+  } catch (e) { alert("저장된 데이터를 읽지 못했습니다: " + e.message); }
+  return { v:1, people: PEOPLE.slice(), me: PEOPLE[1], props: [], lastExport: 0 };
+}
+let saveT = null;
+function save(now) {
+  clearTimeout(saveT);
+  const go = () => {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(S));
+      $("#save").className = "save"; $("#save").textContent = "저장됨 " + new Date().toTimeString().slice(0,5);
+    } catch (e) {
+      $("#save").className = "save err"; $("#save").textContent = "⚠ 저장 실패! 백업 탭에서 내보내세요";
+    }
+  };
+  if (now) go(); else { $("#save").textContent = "…"; saveT = setTimeout(go, 400); }
+}
+function touch() { if (cur) cur.updatedAt = Date.now(); save(); updateStats(); }
+const prop = id => S.props.find(p => p.id === id);
+const meNow = () => S.me;
+
+// ── 탭 ──────────────────────────────────────────────────
+document.querySelectorAll("nav .btn").forEach(b => b.onclick = () => {
+  document.querySelectorAll("nav .btn").forEach(x => x.classList.toggle("on", x === b));
+  ["rec","dash","back"].forEach(t => $("#" + t).classList.toggle("hide", t !== b.dataset.tab));
+  $("#bar").classList.toggle("hide", b.dataset.tab !== "rec");
+  $("#statline").classList.toggle("hide", b.dataset.tab !== "rec");
+  $("#progwrap").classList.toggle("hide", b.dataset.tab !== "rec");
+  if (b.dataset.tab === "dash") renderDash();
+  if (b.dataset.tab === "back") renderBack();
+  scrollTo(0, 0);
+});
+
+// ── 상단바 ──────────────────────────────────────────────
+function renderBar() {
+  const sel = $("#pick");
+  sel.innerHTML = '<option value="">— 매물 목록 —</option>' +
+    S.props.map(p => `<option value="${p.id}">${esc(p.base.단지명 || "이름없음")} ${esc(p.base.동 || "")} ${esc(p.base.호수 || "")}</option>`).join("");
+  sel.value = cur ? cur.id : "";
+  sel.onchange = () => { cur = prop(sel.value) || null; renderRec(); };
+
+  const w = $("#who"); w.innerHTML = "";
+  S.people.forEach(p => {
+    const b = el("button", S.me === p ? "on" : "", esc(p));
+    b.onclick = () => { S.me = p; save(true); renderBar(); if (cur) renderRec(); };
+    w.appendChild(b);
+  });
+}
+function updateStats() {
+  if (!cur) { $("#stat").textContent = ""; $("#progbar").style.width = "0"; return; }
+  const sc = L.calcScore(cur, ITEMS, CATS), pr = L.calcProgress(cur, ITEMS);
+  $("#stat").textContent = `${sc.pct == null ? "-" : sc.pct + "점"} · ${pr.done}/${pr.total} 기입`;
+  $("#progbar").style.width = pr.pct + "%";
+  document.querySelectorAll("details[data-cat]").forEach(d => {
+    const c = d.dataset.cat, done = ITEMS.filter(i => i.cat === c).filter(i => {
+      const e = cur.items[i.id]; return e && Object.keys(e).some(p => e[p] && e[p].v !== undefined && e[p].v !== "");
+    }).length;
+    d.querySelector(".cnt").textContent = `${done}/${ITEMS.filter(i => i.cat === c).length}` + (sc.byCat[c].pct != null ? ` · ${sc.byCat[c].pct}점` : "");
+  });
+}
+
+// ── 기록 탭 ─────────────────────────────────────────────
+function renderRec() { renderBar(); cur ? renderDetail() : renderList(); scrollTo(0,0); }
+
+function renderList() {
+  const box = $("#rec"); box.innerHTML = "";
+  const add = el("button", "btn wide solid", "＋ 새 매물 추가");
+  add.onclick = addProp; box.appendChild(add);
+  if (!S.props.length) { box.appendChild(el("div", "empty", "아직 기록한 매물이 없습니다.<br>임장 전날 후보를 미리 추가해두면 편해요.")); return; }
+  const list = el("div", "plist"); list.style.marginTop = "12px";
+  S.props.slice().sort((a,b) => (b.updatedAt||0) - (a.updatedAt||0)).forEach(p => {
+    const sc = L.calcScore(p, ITEMS, CATS), pr = L.calcProgress(p, ITEMS), pc = L.calcPrice(p);
+    const c = el("div", "pcard", `
+      <span class="s">${sc.pct == null ? "" : sc.pct + "점"}</span>
+      <b>${esc(p.base.단지명 || "이름없음")}</b>
+      <div class="m">${esc(p.base.동 || "")} ${esc(p.base.호수 || "")} · ${p.base.평 ? p.base.평 + "평" : "평수 미입력"} · ${pc.호가 ? man(pc.호가) : "호가 미입력"}</div>
+      <div class="m">${esc(p.base.방문일 || "")} ${p.base.방문회차 ? p.base.방문회차 + "차" : ""} · 기입 ${pr.done}/${pr.total}</div>`);
+    c.onclick = () => { cur = p; renderRec(); };
+    list.appendChild(c);
+  });
+  box.appendChild(list);
+}
+
+function addProp() {
+  const p = L.newProp();
+  p.base.방문일 = new Date().toISOString().slice(0,10);
+  p.base.방문회차 = 1;
+  S.props.push(p); cur = p; save(true); renderRec();
+}
+
+function renderDetail() {
+  const box = $("#rec"); box.innerHTML = "";
+
+  // 기본정보 + 시세
+  const info = el("div", "card");
+  info.appendChild(el("h2", null, "기본 정보"));
+  const preset = el("select");
+  preset.innerHTML = '<option value="">단지 프리셋에서 불러오기…</option>' +
+    PRESETS.map((x,i) => x.평형.map((y,j) => `<option value="${i}.${j}">${esc(x.단지)} ${y.평}평</option>`).join("")).join("");
+  preset.onchange = () => {
+    if (!preset.value) return;
+    const [i,j] = preset.value.split("."); const x = PRESETS[i], y = x.평형[j];
+    Object.assign(cur.base, { 단지명:x.단지, 주소:x.구 + " " + x.동, 준공년도:x.연식, 세대수:x.세대수, 평:y.평 });
+    if (!cur.price.매매호가) cur.price.매매호가 = y.매매;
+    if (!cur.price.전세가) cur.price.전세가 = y.전세;
+    save(true); renderDetail();
+  };
+  info.appendChild(preset);
+  info.appendChild(el("div", "note", `프리셋 시세는 ${PRESET_기준일} 기준 <b>시세</b>입니다. 현장 <b>호가</b>는 직접 확인해서 덮어쓰세요.`));
+
+  const g1 = el("div", "grid"); g1.style.marginTop = "10px";
+  [["단지명","text"],["동","text"],["호수","text"],["평","number"],["층","number"],["총층","number"],
+   ["준공년도","number"],["세대수","number"],["방문일","date"],["방문회차","number"],["부동산","text"],["전화","tel"]]
+    .forEach(([f,t]) => g1.appendChild(field("base", f, t)));
+  info.appendChild(g1);
+  if (cur.base.전화) {
+    const call = el("a", null, "📞 " + esc(cur.base.부동산 || "부동산") + " 전화");
+    call.href = "tel:" + String(cur.base.전화).replace(/[^0-9+]/g,"");
+    call.className = "btn wide"; call.style.cssText += "display:block;text-align:center;margin-top:8px;text-decoration:none";
+    info.appendChild(call);
+  }
+  if (cur.base.단지명) {
+    const map = el("a", "btn wide", "🗺 네이버지도에서 보기");
+    map.href = "https://map.naver.com/p/search/" + encodeURIComponent(cur.base.단지명);
+    map.target = "_blank"; map.rel = "noopener";
+    map.style.cssText += "display:block;text-align:center;margin-top:6px;text-decoration:none";
+    info.appendChild(map);
+  }
+  box.appendChild(info);
+
+  const pr = el("div", "card");
+  pr.appendChild(el("h2", null, "시세 <span class='sub'>(만원)</span>"));
+  const g2 = el("div", "grid");
+  L.PRICE_FIELDS.forEach(f => g2.appendChild(field("price", f, "number")));
+  pr.appendChild(g2);
+  const calcLine = el("div", "note"); calcLine.id = "calcline";
+  pr.appendChild(calcLine);
+  box.appendChild(pr);
+
+  // 보기 토글
+  const tg = el("div", "row"); tg.style.marginBottom = "10px";
+  const t1 = el("button", "btn" + (coreOnly ? " on" : ""), "⭐ 핵심만 (" + ITEMS.filter(i=>i.core).length + ")");
+  const t2 = el("button", "btn" + (coreOnly ? "" : " on"), "전체 보기 (" + ITEMS.length + ")");
+  t1.onclick = () => { coreOnly = true; renderDetail(); };
+  t2.onclick = () => { coreOnly = false; renderDetail(); };
+  tg.appendChild(t1); tg.appendChild(t2);
+  const t3 = el("button", "btn", "🔁 재방문 항목만");
+  t3.onclick = () => { coreOnly = "revisit"; renderDetail(); };
+  if (coreOnly === "revisit") t3.classList.add("on");
+  tg.appendChild(t3);
+  box.appendChild(tg);
+
+  // 카테고리
+  const conf = new Set(L.conflicts(cur, ITEMS, S.people).map(i => i.id));
+  CATS.forEach(c => {
+    let items = ITEMS.filter(i => i.cat === c.id);
+    if (coreOnly === true) items = items.filter(i => i.core);
+    else if (coreOnly === "revisit") items = items.filter(i => i.revisit || cur.flags[i.id]);
+    if (!items.length) return;
+    const d = el("details"); d.dataset.cat = c.id; d.open = true;
+    d.appendChild(el("summary", null, `${c.icon} ${c.name}${c.desc ? ` <span class="sub" style="font-weight:400">${c.desc}</span>` : ""}<span class="cnt"></span>`));
+    items.forEach(it => d.appendChild(itemRow(it, conf.has(it.id))));
+    box.appendChild(d);
+  });
+
+  // 총평
+  const v = el("div", "card");
+  v.appendChild(el("h2", null, `총평 <span class="sub">— ${esc(meNow())}의 의견</span>`));
+  const mine = cur.verdict[meNow()] || {};
+  const ta = el("textarea"); ta.placeholder = "이 집 어땠는지 한 줄로. (인테리어 예산, 걸리는 점, 협상 여지 등)";
+  ta.value = mine.note || "";
+  ta.oninput = () => { setVerdict({ note: ta.value }); };
+  v.appendChild(ta);
+  const ag = el("div", "row"); ag.style.marginTop = "8px";
+  [["다시 볼 집 👍", true], ["아니오 👎", false]].forEach(([lab, val]) => {
+    const b = el("button", "btn" + (mine.again === val ? " on" : ""), lab);
+    b.onclick = () => { setVerdict({ again: mine.again === val ? undefined : val }); renderDetail(); };
+    ag.appendChild(b);
+  });
+  v.appendChild(ag);
+  S.people.filter(p => p !== meNow()).forEach(p => {
+    const o = cur.verdict[p];
+    if (o && (o.note || o.again !== undefined)) v.appendChild(el("div", "note", `<b>${esc(p)}</b>: ${esc(o.note || "")} ${o.again === true ? "👍" : o.again === false ? "👎" : ""}`));
+  });
+  box.appendChild(v);
+
+  // 견적
+  box.appendChild(fixCard());
+
+  const back = el("button", "btn wide", "← 매물 목록");
+  back.onclick = () => { cur = null; renderRec(); };
+  box.appendChild(back);
+  const del = el("button", "btn wide danger", "이 매물 삭제");
+  del.style.marginTop = "8px";
+  del.onclick = () => {
+    if (!confirm(`"${cur.base.단지명 || "이름없음"}" 기록을 삭제할까요? 되돌릴 수 없습니다.`)) return;
+    S.props = S.props.filter(p => p !== cur); cur = null; save(true); renderRec();
+  };
+  box.appendChild(del);
+
+  updateStats(); updateCalc();
+}
+
+function field(group, f, type) {
+  const w = el("div");
+  w.appendChild(el("label", "f", esc(f)));
+  const i = el("input"); i.type = type; i.value = cur[group][f] == null ? "" : cur[group][f];
+  if (type === "number") i.inputMode = "decimal";
+  i.oninput = () => { cur[group][f] = type === "number" ? (i.value === "" ? "" : Number(i.value)) : i.value; touch(); updateCalc(); };
+  w.appendChild(i);
+  return w;
+}
+function updateCalc() {
+  const line = $("#calcline"); if (!line) return;
+  const c = L.calcPrice(cur);
+  line.innerHTML = `평당가 <b>${c.평당가 ? c.평당가.toLocaleString() + "만원" : "-"}</b> · 전세가율 <b>${c.전세가율 != null ? c.전세가율 + "%" : "-"}</b>`;
+  const fc = $("#fixcard"); if (fc) fc.replaceWith(fixCard());
+}
+
+function fixCard() {
+  const f = L.calcFix(cur, ITEMS, FIX_COST);
+  const c = el("div", "card"); c.id = "fixcard";
+  c.appendChild(el("h2", null, "🔨 예상 인테리어 비용"));
+  if (!f.list.length) {
+    c.appendChild(el("div", "note", "‘나쁨’으로 체크한 공사 항목이 없습니다. 도배·장판·화장실·주방·샷시를 체크하면 자동 계산됩니다."));
+    return c;
+  }
+  if (f.pyeongMissing) c.appendChild(el("div", "warnbox", "평수를 입력해야 평당 공사비가 계산됩니다."));
+  c.appendChild(el("div", "big", `${man(f.min)} ~ ${man(f.max)}`));
+  c.appendChild(el("div", "note", f.list.map(x => `${x.label} ${man(x.min)}~${man(x.max)}`).join(" · ")));
+  const p = L.calcPrice(cur);
+  if (p.호가) c.appendChild(el("div", "note", `실입주가(호가+수리비) <b>${man(p.호가 + f.min)} ~ ${man(p.호가 + f.max)}</b>`));
+  if (f.isAll && f.allMax) c.appendChild(el("div", "note",
+    `공사가 ${f.list.length}건 → 사실상 올수리입니다. 업계 통상 견적은 평당 ${FIX_COST.올수리_평당.min}~${FIX_COST.올수리_평당.max}만원 = <b>${man(f.allMin)}~${man(f.allMax)}</b> (${FIX_COST.올수리_평당.기준}).`));
+  c.appendChild(el("div", "note", `단가 기준 ${FIX_COST.기준일} · 대략치입니다. 계약 전 업체 실측 견적 필수.`));
+  return c;
+}
+
+function itemRow(it, isConf) {
+  const row = el("div", "item" + (isConf ? " conflict" : ""));
+  const me = meNow();
+  const mine = (cur.items[it.id] || {})[me] || {};
+  const others = S.people.filter(p => p !== me).map(p => [p, (cur.items[it.id] || {})[p]]).filter(x => x[1] && x[1].v !== undefined && x[1].v !== "");
+
+  row.appendChild(el("div", "ilabel", esc(it.label) + (it.core ? ' <span class="star">⭐</span>' : "") +
+    others.map(([p, e]) => `<span class="other${isConf ? " c" : ""}">${esc(p)} ${esc(showVal(it, e.v))}${e.memo ? " 📝" : ""}</span>`).join("")));
+  if (it.hint) row.appendChild(el("div", "ihint", esc(it.hint)));
+
+  const ctl = el("div", "ctl");
+  if (it.type === "rate") {
+    const r = el("div", "rate");
+    [[0,"나쁨"],[1,"보통"],[2,"좋음"]].forEach(([v, lab]) => {
+      const b = el("button", mine.v === v ? "on" : "", lab); b.dataset.v = v;
+      b.onclick = () => {
+        setVal(it.id, mine.v === v ? undefined : v);
+        r.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b && mine.v !== v));
+        mine.v = mine.v === v ? undefined : v;
+      };
+      r.appendChild(b);
+    });
+    ctl.appendChild(r);
+  } else if (it.type === "bool") {
+    const r = el("div", "rate bool");
+    [[true,"있음 / 예"],[false,"없음 / 아니오"]].forEach(([v, lab]) => {
+      const b = el("button", mine.v === v ? "on" : "", lab);
+      b.onclick = () => {
+        const nv = mine.v === v ? undefined : v;
+        setVal(it.id, nv); mine.v = nv;
+        r.querySelectorAll("button").forEach(x => x.classList.remove("on"));
+        if (nv !== undefined) b.classList.add("on");
+      };
+      r.appendChild(b);
+    });
+    ctl.appendChild(r);
+  } else if (it.type === "sel") {
+    const s = el("select");
+    s.innerHTML = '<option value="">선택</option>' + it.opts.map(o => `<option${mine.v === o ? " selected" : ""}>${esc(o)}</option>`).join("");
+    s.onchange = () => { setVal(it.id, s.value); mine.v = s.value; };
+    ctl.appendChild(s);
+  } else {
+    const i = el("input"); i.type = it.type === "num" ? "number" : "text";
+    if (it.type === "num") { i.inputMode = "decimal"; i.step = "any"; }
+    i.value = mine.v == null ? "" : mine.v;
+    i.placeholder = it.unit ? it.unit : "";
+    i.oninput = () => { const v = it.type === "num" ? (i.value === "" ? undefined : Number(i.value)) : i.value; setVal(it.id, v); mine.v = v; };
+    ctl.appendChild(i);
+  }
+
+  const memoBtn = el("button", "tool" + (mine.memo ? " on" : ""), "📝");
+  const ta = el("textarea", "memo" + (mine.memo ? "" : " hide"));
+  ta.value = mine.memo || ""; ta.placeholder = "메모";
+  ta.oninput = () => { setVal(it.id, mine.v, ta.value); mine.memo = ta.value; memoBtn.classList.toggle("on", !!ta.value); };
+  memoBtn.onclick = () => { ta.classList.toggle("hide"); if (!ta.classList.contains("hide")) ta.focus(); };
+  ctl.appendChild(memoBtn);
+
+  const rv = el("button", "tool" + (cur.flags[it.id] ? " on" : ""), "🔁");
+  rv.title = "다음에 다시 확인";
+  rv.onclick = () => { cur.flags[it.id] ? delete cur.flags[it.id] : cur.flags[it.id] = 1; rv.classList.toggle("on"); touch(); };
+  ctl.appendChild(rv);
+
+  row.appendChild(ctl); row.appendChild(ta);
+  if (it.revisit && !cur.flags[it.id]) row.appendChild(el("div", "ihint", "🔁 저녁·출퇴근 시간대에 다시 봐야 정확합니다"));
+  return row;
+}
+function showVal(it, v) {
+  if (it.type === "rate") return RATE_LABEL[v] || "";
+  if (it.type === "bool") return v ? "있음" : "없음";
+  return String(v) + (it.unit || "");
+}
+function setVal(itemId, v, memo) {
+  const e = cur.items[itemId] || (cur.items[itemId] = {});
+  const mine = e[meNow()] || (e[meNow()] = {});
+  mine.v = v; if (memo !== undefined) mine.memo = memo;
+  mine.at = Date.now();
+  if ((v === undefined || v === "") && !mine.memo) delete e[meNow()];
+  touch();
+}
+function setVerdict(patch) {
+  const v = cur.verdict[meNow()] || (cur.verdict[meNow()] = {});
+  Object.assign(v, patch); v.at = Date.now(); touch();
+}
+
+// ── 비교 탭 ─────────────────────────────────────────────
+function renderDash() {
+  const box = $("#dash"); box.innerHTML = "";
+  if (!S.props.length) { box.appendChild(el("div", "empty", "매물을 먼저 기록해주세요.")); return; }
+  const rows = S.props.map(p => {
+    const sc = L.calcScore(p, ITEMS, CATS), pc = L.calcPrice(p), f = L.calcFix(p, ITEMS, FIX_COST), pg = L.calcProgress(p, ITEMS);
+    return { p, sc, pc, f, pg, mid: (f.min + f.max) / 2 };
+  }).sort((a,b) => (b.sc.pct == null ? -1 : b.sc.pct) - (a.sc.pct == null ? -1 : a.sc.pct));
+
+  const c1 = el("div", "card");
+  c1.appendChild(el("h2", null, "한눈에 비교"));
+  c1.appendChild(el("div", "scroll", `<table>
+    <tr><th>단지</th><th>평</th><th>호가</th><th>평당가</th><th>전세가율</th><th>총점</th><th>기입</th><th>수리비</th><th>실입주가</th></tr>
+    ${rows.map(r => `<tr>
+      <td><b>${esc(r.p.base.단지명 || "이름없음")}</b><br><span class="sub">${esc(r.p.base.동 || "")} ${esc(r.p.base.호수 || "")}</span></td>
+      <td>${r.p.base.평 || "-"}</td>
+      <td>${man(r.pc.호가 || null)}</td>
+      <td>${r.pc.평당가 ? r.pc.평당가.toLocaleString() : "-"}</td>
+      <td>${r.pc.전세가율 != null ? r.pc.전세가율 + "%" : "-"}</td>
+      <td><b>${r.sc.pct == null ? "-" : r.sc.pct}</b></td>
+      <td class="sub">${r.pg.done}/${r.pg.total}</td>
+      <td>${r.f.list.length ? man(r.f.min) + "~" + man(r.f.max) : "-"}</td>
+      <td><b>${r.pc.호가 ? man(r.pc.호가 + r.mid) : "-"}</b></td>
+    </tr>`).join("")}
+  </table>`));
+  c1.appendChild(el("div", "note", "총점은 3단계 평가 항목만 집계하며, 두 사람 평가가 갈리면 낮은 쪽을 씁니다. <b>기입 수가 적으면 총점은 신뢰할 수 없습니다.</b> 실입주가 = 호가 + 수리비 중간값(취득세·이사비 별도)."));
+  box.appendChild(c1);
+
+  const c2 = el("div", "card");
+  c2.appendChild(el("h2", null, "카테고리별 점수"));
+  c2.appendChild(el("div", "scroll", `<table>
+    <tr><th>단지</th>${CATS.map(c => `<th>${c.icon}<br>${esc(c.name)}</th>`).join("")}</tr>
+    ${rows.map(r => `<tr><td><b>${esc(r.p.base.단지명 || "이름없음")}</b></td>${CATS.map(c => {
+      const b = r.sc.byCat[c.id];
+      return `<td>${b.pct == null ? '<span class="sub">-</span>' : b.pct}</td>`;
+    }).join("")}</tr>`).join("")}
+  </table>`));
+  box.appendChild(c2);
+
+  const c3 = el("div", "card");
+  c3.appendChild(el("h2", null, `⚡ 둘의 평가가 갈린 항목`));
+  let any = 0;
+  rows.forEach(r => {
+    const cf = L.conflicts(r.p, ITEMS, S.people);
+    if (!cf.length) return;
+    any++;
+    c3.appendChild(el("div", "note", `<b>${esc(r.p.base.단지명 || "이름없음")}</b> — ` +
+      cf.map(it => `${esc(it.label)}(${S.people.map(pe => { const e = (r.p.items[it.id]||{})[pe]; return e && e.v !== undefined ? esc(pe) + " " + esc(showVal(it, e.v)) : null; }).filter(Boolean).join(" / ")})`).join(", ")));
+  });
+  if (!any) c3.appendChild(el("div", "note", "아직 갈린 항목이 없습니다. (백업 탭에서 상대 기록을 불러오면 여기에 모입니다)"));
+  box.appendChild(c3);
+
+  const c4 = el("div", "card");
+  c4.appendChild(el("h2", null, "🔁 재방문 때 확인할 항목"));
+  let any2 = 0;
+  S.props.forEach(p => {
+    const ids = Object.keys(p.flags || {});
+    if (!ids.length) return;
+    any2++;
+    c4.appendChild(el("div", "note", `<b>${esc(p.base.단지명 || "이름없음")}</b> — ` +
+      ids.map(id => { const it = ITEMS.find(x => x.id === id); return it ? esc(it.label) : id; }).join(", ")));
+  });
+  if (!any2) c4.appendChild(el("div", "note", "체크된 항목이 없습니다. 항목 옆 🔁 버튼으로 표시하세요."));
+  box.appendChild(c4);
+}
+
+// ── 백업 탭 ─────────────────────────────────────────────
+let pending = null;
+function renderBack() {
+  const box = $("#back"); box.innerHTML = "";
+  const days = S.lastExport ? Math.floor((Date.now() - S.lastExport) / 86400000) : null;
+  if (S.props.length && (days === null || days >= 7))
+    box.appendChild(el("div", "warnbox", `⚠ ${days === null ? "아직 한 번도 백업하지 않았습니다" : days + "일째 백업하지 않았습니다"}. 브라우저 데이터를 지우면 기록이 전부 사라집니다.`));
+
+  const c1 = el("div", "card");
+  c1.appendChild(el("h2", null, "내보내기"));
+  c1.appendChild(el("div", "note", `매물 ${S.props.length}건. 파일로 저장하거나 복사해서 카톡으로 상대에게 보내세요.`));
+  const b1 = el("button", "btn wide solid", "📥 JSON 파일로 저장");
+  b1.style.marginTop = "8px";
+  b1.onclick = () => {
+    const name = `임장_${S.me}_${new Date().toISOString().slice(0,10)}.json`;
+    const a = el("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(S)], { type: "application/json" }));
+    a.download = name; a.click(); URL.revokeObjectURL(a.href);
+    S.lastExport = Date.now(); save(true); renderBack();
+  };
+  c1.appendChild(b1);
+  const b2 = el("button", "btn wide", "📋 클립보드로 복사");
+  b2.style.marginTop = "6px";
+  b2.onclick = async () => {
+    try { await navigator.clipboard.writeText(JSON.stringify(S)); b2.textContent = "복사됨 ✓"; S.lastExport = Date.now(); save(true); }
+    catch (e) { alert("복사 실패 — 파일로 저장을 이용하세요."); }
+  };
+  c1.appendChild(b2);
+  box.appendChild(c1);
+
+  const c2 = el("div", "card");
+  c2.appendChild(el("h2", null, "불러오기 · 합치기"));
+  c2.appendChild(el("div", "note", "상대에게 받은 파일이나 복사한 내용을 넣으면, <b>누구 기록으로 합칠지</b> 고른 뒤 미리보기를 보고 적용합니다. 내 기록은 지워지지 않습니다."));
+  const fi = el("input"); fi.type = "file"; fi.accept = ".json,application/json"; fi.style.marginTop = "8px";
+  fi.onchange = () => { const f = fi.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => stage(r.result); r.readAsText(f); };
+  c2.appendChild(fi);
+  const ta = el("textarea"); ta.placeholder = "또는 복사한 JSON을 여기 붙여넣기"; ta.style.marginTop = "8px";
+  c2.appendChild(ta);
+  const b3 = el("button", "btn wide", "붙여넣은 내용 읽기");
+  b3.style.marginTop = "6px";
+  b3.onclick = () => stage(ta.value);
+  c2.appendChild(b3);
+  const prev = el("div"); prev.id = "prev";
+  c2.appendChild(prev);
+  box.appendChild(c2);
+
+  const c3 = el("div", "card");
+  c3.appendChild(el("h2", null, "복구"));
+  c3.appendChild(el("div", "note", "앱을 열 때마다 직전 상태를 한 벌 보관합니다. 잘못 합쳤을 때 되돌리세요."));
+  const b4 = el("button", "btn wide danger", "↩ 앱 열기 직전 상태로 되돌리기");
+  b4.style.marginTop = "8px";
+  b4.onclick = () => {
+    const raw = localStorage.getItem(BAK);
+    if (!raw) return alert("보관된 직전 상태가 없습니다.");
+    if (!confirm("지금 기록을 버리고 앱 열기 직전 상태로 되돌립니다. 진행할까요?")) return;
+    S = JSON.parse(raw); cur = null; save(true); renderBack(); renderRec();
+    alert("되돌렸습니다.");
+  };
+  c3.appendChild(b4);
+  box.appendChild(c3);
+
+  if (pending) showPreview();
+}
+
+function stage(text) {
+  try {
+    const inc = JSON.parse(text);
+    if (!inc || !Array.isArray(inc.props)) throw new Error("임장 백업 파일이 아닙니다");
+    pending = inc; showPreview();
+  } catch (e) { alert("읽기 실패: " + e.message); }
+}
+function showPreview() {
+  const box = $("#prev"); box.innerHTML = "";
+  const who = pending.me && S.people.includes(pending.me) ? pending.me : S.people[0];
+  box.appendChild(el("div", "note", `<b>매물 ${pending.props.length}건</b>을 읽었습니다${pending.me ? ` (파일에 기록된 작성자: ${esc(pending.me)})` : ""}. 누구 기록으로 합칠까요?`));
+  let asPerson = who;
+  const row = el("div", "row"); row.style.margin = "8px 0";
+  S.people.forEach(p => {
+    const b = el("button", "btn" + (p === asPerson ? " on" : ""), esc(p) + " 기록으로");
+    b.onclick = () => { asPerson = p; row.querySelectorAll(".btn").forEach(x => x.classList.toggle("on", x === b)); refresh(); };
+    row.appendChild(b);
+  });
+  box.appendChild(row);
+  const sum = el("div", "note"); box.appendChild(sum);
+  const apply = el("button", "btn wide solid", "합치기");
+  apply.style.marginTop = "8px";
+  apply.onclick = () => {
+    const { state, stat } = L.mergeState(S, pending, asPerson);
+    S = state; save(true); pending = null; cur = null;
+    alert(`합쳤습니다.\n새 매물 ${stat.added}건 · 갱신 ${stat.updatedItems}항목` + (stat.conflicts.length ? `\n기본정보 충돌 ${stat.conflicts.length}건은 최신 값으로 덮었습니다.` : ""));
+    renderBack(); renderRec();
+  };
+  box.appendChild(apply);
+  const cancel = el("button", "btn wide", "취소");
+  cancel.style.marginTop = "6px";
+  cancel.onclick = () => { pending = null; renderBack(); };
+  box.appendChild(cancel);
+  function refresh() {
+    const { stat } = L.mergeState(S, pending, asPerson);
+    sum.innerHTML = `합치면 → 새 매물 <b>${stat.added}건</b> 추가 · 항목 <b>${stat.updatedItems}개</b> 갱신` +
+      (stat.conflicts.length ? ` · 기본정보 충돌 ${stat.conflicts.length}건(최신 값 채택)` : "") +
+      `<br>${esc(asPerson)}의 평가로 들어가며, ${esc(S.people.filter(p => p !== asPerson).join("·"))}의 기록은 그대로 남습니다.`;
+  }
+  refresh();
+}
+
+// ── 시작 ────────────────────────────────────────────────
+renderRec();
+$("#save").textContent = S.props.length ? "불러옴 · 자동 저장됩니다" : "자동 저장됩니다 (저장 버튼 없음)";
+addEventListener("visibilitychange", () => { if (document.hidden) save(true); });
+if ("serviceWorker" in navigator && location.protocol.startsWith("http"))
+  addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+</script>
+</body>
+</html>
